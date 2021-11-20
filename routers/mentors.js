@@ -1,4 +1,5 @@
 const { Mentor } = require("../models/mentor");
+const { Mentee } = require("../models/mentee");
 const { Invite } = require("../models/invite");
 const { Answer } = require("../models/answer");
 const express = require("express");
@@ -26,13 +27,22 @@ router.get("/:id", async (req, res) => {
 router.get("/invite/:id", async (req, res) => {
   let filter = {};
   if (req.params.id) {
-    filter = { mentee: req.params.id };
+    filter = { mentor: req.params.id };
   }
   const inviteList = await Invite.find(filter).sort({ date: -1 });
   if (!inviteList) {
     res.json({ success: false });
   }
   res.send(inviteList);
+});
+
+router.get(`/mentee/:id`, async (req, res) => {
+  // localhost:3000/patients?doctor=2342342
+  Mentor.findOne({ _id: req.params.id })
+    .populate("mentees") // key to populate
+    .then((user) => {
+      res.json(user);
+    });
 });
 
 router.get("/meeting/:id", async (req, res) => {
@@ -120,23 +130,34 @@ router.post("/register", async (req, res) => {
 });
 
 router.put("/invite/accept/:id", async (req, res) => {
+  const inviteid = mongoose.Types.ObjectId(req.body.invite);
+  console.log(inviteid);
+  const inviteis = await Invite.findById(inviteid);
+
   const mentorid = mongoose.Types.ObjectId(req.params.id);
   const mentorobj = await Mentor.findById(mentorid);
-  const menteeArray = menteeobj.mentee;
+  const menteeArray = mentorobj.mentees;
 
   menteeArray.push(mongoose.Types.ObjectId(req.body.mentee));
   let params = {
     mentees: menteeArray,
   };
+
   for (let prop in params) if (!params[prop]) delete params[prop];
   const mentor = await Mentor.findByIdAndUpdate(req.params.id, params, {
     new: true,
   });
 
-  const menteeid = mongoose.Types.ObjectId(req.body.menteeid);
+  const menteeid = mongoose.Types.ObjectId(inviteis.mentee);
+
   const menteeobj = await Mentee.findById(menteeid);
   const mentorArray = menteeobj.mentors;
-  mentorArray.push(req.params.id);
+  const objofmetee = {
+    category: mongoose.Types.ObjectId(mentorobj.category),
+    mentor: menteeid,
+  };
+
+  mentorArray.push(objofmetee);
   params = {
     mentors: mentorArray,
   };
@@ -146,7 +167,6 @@ router.put("/invite/accept/:id", async (req, res) => {
   });
 
   try {
-    const inviteid = mongoose.Types.ObjectId(req.body.invite);
     const invite = await Invite.findByIdAndDelete(inviteid);
     if (!invite) {
       return res.status(404).send();
@@ -280,7 +300,6 @@ router.post("/question/:id", async (req, res) => {
   });
   question = await question.save();
   if (!question) return res.send("the answer cannot be created!");
-
   res.send(question);
 });
 module.exports = router;

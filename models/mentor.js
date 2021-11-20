@@ -86,11 +86,11 @@ const mentorSchema = mongoose.Schema({
   totalCoins: {
     current: {
       type: Number,
-      default: 0,
+      default: 10,
     },
     total: {
       type: Number,
-      default: 0,
+      default: 10,
     },
   },
 });

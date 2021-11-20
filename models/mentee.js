@@ -26,7 +26,7 @@ const menteeSchema = mongoose.Schema({
       },
       mentor: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "Mentee",
+        ref: "Mentor",
       },
     },
   ],
@@ -89,23 +89,17 @@ const menteeSchema = mongoose.Schema({
     },
   ],
 
-  mentors: [
-    {
-      type: mongoose.Schema.Types.ObjectId,
-    },
-  ],
-
   resume: {
     type: Object,
   },
   totalCoins: {
     current: {
       type: Number,
-      default: 0,
+      default: 10,
     },
     total: {
       type: Number,
-      default: 0,
+      default: 10,
     },
   },
 });

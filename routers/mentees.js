@@ -25,6 +25,20 @@ router.get("/:id", async (req, res) => {
   res.send(mentee);
 });
 
+router.get(`/mentor/:id`, async (req, res) => {
+  // localhost:3000/patients?doctor=2342342
+  Mentee.findOne({ _id: req.params.id })
+    .populate({
+      path: "mentors", // populate blogs
+      populate: {
+        path: "mentor", // in blogs, populate comments
+      },
+    })
+    .then((user) => {
+      res.json(user);
+    });
+});
+
 router.get("/invite/:id", async (req, res) => {
   let filter = {};
   if (req.params.id) {
