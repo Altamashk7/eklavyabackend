@@ -11,9 +11,7 @@ const inviteSchema = mongoose.Schema({
   mentee: {
     type: mongoose.Schema.Types.ObjectId,
   },
-  class: {
-    type: mongoose.Schema.Types.ObjectId,
-  },
+
   date: {
     type: Date,
   },

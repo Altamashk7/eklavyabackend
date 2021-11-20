@@ -1,11 +1,5 @@
 const mongoose = require("mongoose");
 
-const Mentor = require("../models/mentor");
-
-const Category = require("../models/category");
-
-const Badge = require("../models/badge");
-
 const menteeSchema = mongoose.Schema({
   email: {
     type: String,
@@ -94,7 +88,8 @@ const menteeSchema = mongoose.Schema({
       },
     },
   ],
-  class: [
+
+  mentors: [
     {
       type: mongoose.Schema.Types.ObjectId,
     },

@@ -1,6 +1,6 @@
 const { Mentee } = require("../models/mentee");
 const { Invite } = require("../models/invite");
-const { Class } = require("../models/class");
+
 const { Answer } = require("../models/answer");
 const express = require("express");
 const { Meeting } = require("../models/meeting");
@@ -37,55 +37,44 @@ router.get("/invite/:id", async (req, res) => {
   res.send(inviteList);
 });
 
-router.get("/class/:id", async (req, res) => {
-  let filter = {};
-  if (req.params.id) {
-    filter = { mentee: req.params.id };
-  }
-  const classList = await Class.find(filter).sort({ date: -1 });
-  if (!classList) {
-    res.json({ success: false });
-  }
-  res.send(classList);
-});
+// mentors can only send invite
+// router.put("/invite/accept/:id", async (req, res) => {
+//   const menteeid = mongoose.Types.ObjectId(req.params.id);
+//   const menteeobj = await Mentee.findById(menteeid);
+//   const classArray = menteeobj.class;
 
-router.put("/invite/accept/:id", async (req, res) => {
-  const menteeid = mongoose.Types.ObjectId(req.params.id);
-  const menteeobj = await Mentee.findById(menteeid);
-  const classArray = menteeobj.class;
+//   classArray.push(mongoose.Types.ObjectId(req.body.class));
+//   let params = {
+//     class: classArray,
+//   };
+//   for (let prop in params) if (!params[prop]) delete params[prop];
+//   const mentee = await Mentee.findByIdAndUpdate(req.params.id, params, {
+//     new: true,
+//   });
 
-  classArray.push(mongoose.Types.ObjectId(req.body.class));
-  let params = {
-    class: classArray,
-  };
-  for (let prop in params) if (!params[prop]) delete params[prop];
-  const mentee = await Mentee.findByIdAndUpdate(req.params.id, params, {
-    new: true,
-  });
+//   const classid = mongoose.Types.ObjectId(req.body.class);
+//   const classobj = await Class.findById(classid);
+//   const menteeArray = classobj.mentee;
+//   menteeArray.push(req.params.id);
+//   params = {
+//     mentee: menteeArray,
+//   };
+//   for (let prop in params) if (!params[prop]) delete params[prop];
+//   const classa = await Class.findByIdAndUpdate(classid, params, {
+//     new: true,
+//   });
 
-  const classid = mongoose.Types.ObjectId(req.body.class);
-  const classobj = await Class.findById(classid);
-  const menteeArray = classobj.mentee;
-  menteeArray.push(req.params.id);
-  params = {
-    mentee: menteeArray,
-  };
-  for (let prop in params) if (!params[prop]) delete params[prop];
-  const classa = await Class.findByIdAndUpdate(classid, params, {
-    new: true,
-  });
-
-  try {
-    const inviteid = mongoose.Types.ObjectId(req.body.invite);
-    const invite = await Invite.findByIdAndDelete(inviteid);
-    if (!invite) {
-      return res.status(404).send();
-    }
-    res.send("invite accepted");
-  } catch (error) {
-    res.status(500).send(error);
-  }
-});
+//   try {
+//     const inviteid = mongoose.Types.ObjectId(req.body.invite);
+//     const invite = await Invite.findByIdAndDelete(inviteid);
+//     if (!invite) {
+//       return res.status(404).send();
+//     }
+//     res.send("invite accepted");
+//   } catch (error) {
+//     res.status(500).send(error);
+//   }
+// });
 
 router.get("/meeting/:id", async (req, res) => {
   let filter = {};
@@ -142,39 +131,21 @@ router.post("/meeting/:id", async (req, res) => {
 router.post("/invite/:id", async (req, res) => {
   const mentorid = mongoose.Types.ObjectId(req.body.mentor);
   const menteeid = mongoose.Types.ObjectId(req.params.id);
-  const classid = mongoose.Types.ObjectId(req.body.class);
+
   const today = Date.now();
   let invite = new Invite({
     message: req.body.message,
     mentor: menteeid,
     mentee: menteeid,
     date: today,
-    class: classid,
   });
   invite = await invite.save();
   if (!invite) return res.send("the Invite cannot be created!");
   res.send(invite);
 });
 
-// router.post("/class/:id", async (req, res) => {
-//   const menteeid = mongoose.Types.ObjectId(req.params.id);
-//   const today = Date.now();
-
-//   let classA = new Class({
-//     className: req.body.className,
-
-//     mentee: menteeid,
-//     date: today,
-//   });
-//   classA = await classA.save();
-//   if (!classA) return res.send("the Invite cannot be created!");
-
-//   res.send(classA);
-// });
-
 router.post("/register", async (req, res) => {
   console.log(req.body);
-  const categoryid = mongoose.Types.ObjectId(req.body.category);
   let mentee = new Mentee({
     email: req.body.email,
     password: req.body.password,
@@ -219,22 +190,6 @@ router.put("/skills/:id", async (req, res) => {
   if (!mentee) return res.send("the skills cannot be updated!");
   res.send(mentee);
 });
-// for achievements
-router.put("/achievements/:id", async (req, res) => {
-  const menteeA = await Mentee.findById(req.params.id);
-  const achievementsArray = menteeA.achivemenets;
-  achievementsArray.push(req.body.achivemenets);
-  let params = {
-    achivemenets: achievementsArray,
-  };
-  for (let prop in params) if (!params[prop]) delete params[prop];
-  const mentee = await Mentee.findByIdAndUpdate(req.params.id, params, {
-    new: true,
-  });
-  if (!mentee) return res.send("the skills cannot be updated!");
-  res.send(mentee);
-});
-
 // for achievements
 router.put("/achievements/:id", async (req, res) => {
   const menteeA = await Mentee.findById(req.params.id);

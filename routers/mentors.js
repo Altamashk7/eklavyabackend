@@ -1,6 +1,5 @@
 const { Mentor } = require("../models/mentor");
 const { Invite } = require("../models/invite");
-const { Class } = require("../models/class");
 const { Answer } = require("../models/answer");
 const express = require("express");
 const { Meeting } = require("../models/meeting");
@@ -34,18 +33,6 @@ router.get("/invite/:id", async (req, res) => {
     res.json({ success: false });
   }
   res.send(inviteList);
-});
-
-router.get("/class/:id", async (req, res) => {
-  let filter = {};
-  if (req.params.id) {
-    filter = { mentee: req.params.id };
-  }
-  const classList = await Class.find(filter).sort({ date: -1 });
-  if (!classList) {
-    res.json({ success: false });
-  }
-  res.send(classList);
 });
 
 router.get("/meeting/:id", async (req, res) => {
@@ -104,34 +91,17 @@ router.post("/meeting/:id", async (req, res) => {
 router.post("/invite/:id", async (req, res) => {
   const menteeid = mongoose.Types.ObjectId(req.body.mentee);
   const mentorid = mongoose.Types.ObjectId(req.params.id);
-  const classid = mongoose.Types.ObjectId(req.body.class);
+
   const today = Date.now();
   let invite = new Invite({
     message: req.body.message,
     mentee: menteeid,
     mentor: mentorid,
     date: today,
-    class: classid,
   });
   invite = await invite.save();
   if (!invite) return res.send("the Invite cannot be created!");
   res.send(invite);
-});
-
-router.post("/class/:id", async (req, res) => {
-  const mentorid = mongoose.Types.ObjectId(req.params.id);
-  const today = Date.now();
-
-  let classA = new Class({
-    className: req.body.className,
-
-    mentor: mentorid,
-    date: today,
-  });
-  classA = await classA.save();
-  if (!classA) return res.send("the Invite cannot be created!");
-
-  res.send(classA);
 });
 
 router.post("/register", async (req, res) => {
@@ -147,6 +117,56 @@ router.post("/register", async (req, res) => {
   mentor = await mentor.save();
   if (!mentor) return res.send("the mentor cannot be created!");
   res.status(200).send(mentor);
+});
+
+router.put("/invite/accept/:id", async (req, res) => {
+  const mentorid = mongoose.Types.ObjectId(req.params.id);
+  const mentorobj = await Mentor.findById(mentorid);
+  const menteeArray = menteeobj.mentee;
+
+  menteeArray.push(mongoose.Types.ObjectId(req.body.mentee));
+  let params = {
+    mentees: menteeArray,
+  };
+  for (let prop in params) if (!params[prop]) delete params[prop];
+  const mentor = await Mentor.findByIdAndUpdate(req.params.id, params, {
+    new: true,
+  });
+
+  const menteeid = mongoose.Types.ObjectId(req.body.menteeid);
+  const menteeobj = await Mentee.findById(menteeid);
+  const mentorArray = menteeobj.mentors;
+  mentorArray.push(req.params.id);
+  params = {
+    mentors: mentorArray,
+  };
+  for (let prop in params) if (!params[prop]) delete params[prop];
+  const mentee = await Mentee.findByIdAndUpdate(menteeid, params, {
+    new: true,
+  });
+
+  try {
+    const inviteid = mongoose.Types.ObjectId(req.body.invite);
+    const invite = await Invite.findByIdAndDelete(inviteid);
+    if (!invite) {
+      return res.status(404).send();
+    }
+    res.send("invite accepted");
+  } catch (error) {
+    res.status(500).send(error);
+  }
+});
+
+router.get("/meeting/:id", async (req, res) => {
+  let filter = {};
+  if (req.params.id) {
+    filter = { mentee: req.params.id };
+  }
+  const meetingList = await Meeting.find(filter).sort({ date: -1 });
+  if (!meetingList) {
+    res.json({ success: false });
+  }
+  res.send(meetingList);
 });
 
 //for profile
@@ -183,22 +203,6 @@ router.put("/skills/:id", async (req, res) => {
   if (!mentor) return res.send("the skills cannot be updated!");
   res.send(mentor);
 });
-// for achievements
-router.put("/achievements/:id", async (req, res) => {
-  const mentorA = await Mentor.findById(req.params.id);
-  const achievementsArray = mentorA.achivemenets;
-  achievementsArray.push(req.body.achivemenets);
-  let params = {
-    achivemenets: achievementsArray,
-  };
-  for (let prop in params) if (!params[prop]) delete params[prop];
-  const mentor = await Mentor.findByIdAndUpdate(req.params.id, params, {
-    new: true,
-  });
-  if (!mentor) return res.send("the skills cannot be updated!");
-  res.send(mentor);
-});
-
 // for achievements
 router.put("/achievements/:id", async (req, res) => {
   const mentorA = await Mentor.findById(req.params.id);
@@ -272,7 +276,6 @@ router.post("/question/:id", async (req, res) => {
     question: req.body.question,
     askedby: mentorid,
     category: categoryid,
-
     date: today,
   });
   question = await question.save();
