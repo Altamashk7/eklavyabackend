@@ -26,7 +26,6 @@ router.get("/:id", async (req, res) => {
 });
 
 router.get(`/mentor/:id`, async (req, res) => {
-  // localhost:3000/patients?doctor=2342342
   Mentee.findOne({ _id: req.params.id })
     .populate({
       path: "mentors", // populate blogs
@@ -272,16 +271,18 @@ router.post("/answers/:id", async (req, res) => {
 router.post("/question/:id", async (req, res) => {
   const menteeA = await Mentee.findById(req.params.id);
   const coins = menteeA.totalCoins;
+  console.log(coins);
   if (coins.current > 0) {
     coins.current = coins.current - 1;
+    console.log(coins);
     let params = {
-      toalcoins: coins,
+      totalCoins: coins,
     };
     for (let prop in params) if (!params[prop]) delete params[prop];
     const mentee = await Mentee.findByIdAndUpdate(req.params.id, params, {
       new: true,
     });
-
+    console.log(mentee);
     const menteeid = mongoose.Types.ObjectId(req.params.id);
     const categoryid = mongoose.Types.ObjectId(req.body.category);
     const today = Date.now();
@@ -298,25 +299,27 @@ router.post("/question/:id", async (req, res) => {
     res.send(question);
   }
 
-  res.send("No coins");
+  // res.send("No coins");
 });
 
 router.put("/answer/accept/:id", async (req, res) => {
   const answerid = mongoose.Types.ObjectId(req.body.answer);
-  const answer = Answer.findById(answerid);
+
+  const answer = await Answer.findById(answerid);
+  console.log(answer);
   if (!answer.verified) {
     const awardeeid = mongoose.Types.ObjectId(answer.answeredby);
 
     const awardee = await Mentee.findById(awardeeid);
-
+    console.log(awardee);
     const coins = awardee.totalCoins;
 
     coins.current = coins.current + 2;
     let params = {
-      toalcoins: coins,
+      totalCoins: coins,
     };
     for (let prop in params) if (!params[prop]) delete params[prop];
-    const mentee = await Mentee.findByIdAndUpdate(req.params.id, params, {
+    const mentee = await Mentee.findByIdAndUpdate(awardeeid, params, {
       new: true,
     });
 
@@ -324,7 +327,7 @@ router.put("/answer/accept/:id", async (req, res) => {
       verified: true,
     };
     for (let prop in params) if (!params[prop]) delete params[prop];
-    const answera = await Answer.findByIdAndUpdate(req.params.id, params, {
+    const answera = await Answer.findByIdAndUpdate(answerid, params, {
       new: true,
     });
 

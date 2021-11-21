@@ -1,5 +1,6 @@
 const { Mentor } = require("../models/mentor");
 const { Mentee } = require("../models/mentee");
+const { Category } = require("../models/category");
 const { Invite } = require("../models/invite");
 const { Answer } = require("../models/answer");
 const express = require("express");
@@ -80,7 +81,15 @@ router.get("/answer/:id", async (req, res) => {
   }
   res.send(answerList);
 });
+router.post("/category", async (req, res) => {
+  let category = new Category({
+    name: req.body.name,
+  });
+  category = await category.save();
+  if (!category) return res.send("the category cannot be created!");
 
+  res.send(category);
+});
 router.post("/meeting/:id", async (req, res) => {
   const menteeid = mongoose.Types.ObjectId(req.body.mentee);
   const mentorid = mongoose.Types.ObjectId(req.params.id);
