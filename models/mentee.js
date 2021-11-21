@@ -42,9 +42,11 @@ const menteeSchema = mongoose.Schema({
   profileDescription: {
     type: String,
   },
-  achievements: {
-    type: String,
-  },
+  achievements: [
+    {
+      type: String,
+    },
+  ],
   skills: [
     {
       name: {

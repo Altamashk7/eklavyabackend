@@ -169,25 +169,6 @@ router.post("/register", async (req, res) => {
   res.status(200).send(mentee);
 });
 
-//for profile
-router.put("/:id", async (req, res) => {
-  // console.log(req.body);
-  let params = {
-    email: req.body.email,
-    name: req.body.name,
-    qualifications: req.body.a,
-    profileHeading: req.body.a,
-    profileDescription: req.body.profileDescription,
-  };
-  for (let prop in params) if (!params[prop]) delete params[prop];
-
-  const mentee = await Mentee.findByIdAndUpdate(req.params.id, params, {
-    new: true,
-  });
-
-  if (!mentee) return res.send("the mentee cannot be updated!");
-  res.send(mentee);
-});
 // for skills
 router.put("/skills/:id", async (req, res) => {
   const menteeA = await Mentee.findById(req.params.id);
@@ -315,6 +296,7 @@ router.put("/answer/accept/:id", async (req, res) => {
     const coins = awardee.totalCoins;
 
     coins.current = coins.current + 2;
+    coins.total = coins.total + 2;
     let params = {
       totalCoins: coins,
     };
@@ -335,6 +317,26 @@ router.put("/answer/accept/:id", async (req, res) => {
   }
 
   res.send("Already verified");
+});
+
+//for profile
+router.put("/:id", async (req, res) => {
+  // console.log(req.body);
+  let params = {
+    email: req.body.email,
+    name: req.body.name,
+    qualifications: req.body.a,
+    profileHeading: req.body.a,
+    profileDescription: req.body.profileDescription,
+  };
+  for (let prop in params) if (!params[prop]) delete params[prop];
+
+  const mentee = await Mentee.findByIdAndUpdate(req.params.id, params, {
+    new: true,
+  });
+
+  if (!mentee) return res.send("the mentee cannot be updated!");
+  res.send(mentee);
 });
 
 module.exports = router;
