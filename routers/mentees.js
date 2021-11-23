@@ -1,6 +1,5 @@
 const { Mentee } = require("../models/mentee");
 const { Invite } = require("../models/invite");
-
 const { Answer } = require("../models/answer");
 const express = require("express");
 const { Meeting } = require("../models/meeting");
@@ -40,9 +39,9 @@ router.get("/badges/:id", async (req, res) => {
 router.get(`/mentor/:id`, async (req, res) => {
   Mentee.findOne({ _id: req.params.id })
     .populate({
-      path: "mentors", // populate blogs
+      path: "mentors",
       populate: {
-        path: "mentor", // in blogs, populate comments
+        path: "mentor",
       },
     })
     .then((user) => {
@@ -160,7 +159,7 @@ router.post("/invite/:id", async (req, res) => {
   const today = Date.now();
   let invite = new Invite({
     message: req.body.message,
-    mentor: menteeid,
+    mentor: mentorid,
     mentee: menteeid,
     date: today,
   });
@@ -212,30 +211,13 @@ router.put("/achievements/:id", async (req, res) => {
   res.send(mentee);
 });
 
-router.put("/badges/:id", async (req, res) => {
-  const menteeA = await Mentee.findById(req.params.id);
-  const badgesArray = menteeA.badges;
-  badgesArray.push(req.body.badges);
-  let params = {
-    badges: badgesArray,
-  };
-  for (let prop in params) if (!params[prop]) delete params[prop];
-  const mentee = await Mentee.findByIdAndUpdate(req.params.id, params, {
-    new: true,
-  });
-  if (!mentee) return res.send("the badges cannot be updated!");
-  res.send(mentee);
-});
-
 //answer
 router.post("/answers/:id", async (req, res) => {
   const menteeid = mongoose.Types.ObjectId(req.params.id);
 
   let answer = new Answer({
     answer: req.body.answer,
-
     answeredby: menteeid,
-
     date: req.body.date,
   });
   answer = await answer.save();
@@ -243,10 +225,9 @@ router.post("/answers/:id", async (req, res) => {
   else {
     const answerid = answer._id;
     const questionid = mongoose.Types.ObjectId(req.body.question);
-
     const question = await Question.findById(questionid);
-
     const answerArray = question.answers;
+
     answerArray.push(answerid);
     let params = {
       answers: answerArray,
@@ -255,8 +236,7 @@ router.post("/answers/:id", async (req, res) => {
     const questiona = await Question.findByIdAndUpdate(questionid, params, {
       new: true,
     });
-    if (!questiona) return res.send("the badges cannot be updated!");
-
+    if (!questiona) return res.send("cannot be updated!");
     res.send(answer);
   }
 });
@@ -288,30 +268,25 @@ router.post("/question/:id", async (req, res) => {
     });
     question = await question.save();
     if (!question) return res.send("the answer cannot be created!");
-
     res.send(question);
-  }
-
-  // res.send("No coins");
+  } else res.send("No coins");
 });
 
 router.put("/answer/accept/:id", async (req, res) => {
   const answerid = mongoose.Types.ObjectId(req.body.answer);
-
   const answer = await Answer.findById(answerid);
-  console.log(answer);
+
   if (!answer.verified) {
     const awardeeid = mongoose.Types.ObjectId(answer.answeredby);
-
     const awardee = await Mentee.findById(awardeeid);
-    console.log(awardee);
     const coins = awardee.totalCoins;
-
     coins.current = coins.current + 2;
     coins.total = coins.total + 2;
+
     let params = {
       totalCoins: coins,
     };
+
     for (let prop in params) if (!params[prop]) delete params[prop];
     const mentee = await Mentee.findByIdAndUpdate(awardeeid, params, {
       new: true,
