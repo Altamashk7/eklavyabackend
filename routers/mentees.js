@@ -25,6 +25,18 @@ router.get("/:id", async (req, res) => {
   res.send(mentee);
 });
 
+router.get("/badges/:id", async (req, res) => {
+  let filter = {};
+  if (req.params.id) {
+    filter = { mentee: req.params.id };
+  }
+  const BadgeList = await Badge.find(filter).sort({ date: -1 });
+  if (!BadgeList) {
+    res.json({ success: false });
+  }
+  res.send(BadgeList);
+});
+
 router.get(`/mentor/:id`, async (req, res) => {
   Mentee.findOne({ _id: req.params.id })
     .populate({

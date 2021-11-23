@@ -3,11 +3,13 @@ const { Mentee } = require("../models/mentee");
 const { Category } = require("../models/category");
 const { Invite } = require("../models/invite");
 const { Answer } = require("../models/answer");
+
 const express = require("express");
 const { Meeting } = require("../models/meeting");
 const { Question } = require("../models/question");
 const router = express.Router();
 const mongoose = require("mongoose");
+const { Badge } = require("../models/badge");
 router.get(`/`, async (req, res) => {
   const mentorList = await Mentor.find().select("-password");
   if (!mentorList) {
@@ -23,6 +25,18 @@ router.get("/:id", async (req, res) => {
     res.json({ message: "The Mentor with the given ID was not found." });
   }
   res.send(mentor);
+});
+
+router.get("/badges/:id", async (req, res) => {
+  let filter = {};
+  if (req.params.id) {
+    filter = { mentor: req.params.id };
+  }
+  const BadgeList = await Badge.find(filter).sort({ date: -1 });
+  if (!BadgeList) {
+    res.json({ success: false });
+  }
+  res.send(BadgesList);
 });
 
 router.get("/invite/:id", async (req, res) => {
@@ -248,20 +262,20 @@ router.put("/achievements/:id", async (req, res) => {
   res.send(mentor);
 });
 
-router.put("/badges/:id", async (req, res) => {
-  const mentorA = await Mentor.findById(req.params.id);
-  const badgesArray = mentorA.badges;
-  badgesArray.push(req.body.badges);
-  let params = {
-    badges: badgesArray,
-  };
-  for (let prop in params) if (!params[prop]) delete params[prop];
-  const mentor = await Mentor.findByIdAndUpdate(req.params.id, params, {
-    new: true,
-  });
-  if (!mentor) return res.send("the badges cannot be updated!");
-  res.send(mentor);
-});
+// router.put("/badges/:id", async (req, res) => {
+//   const mentorA = await Mentor.findById(req.params.id);
+//   const badgesArray = mentorA.badges;
+//   badgesArray.push(req.body.badges);
+//   let params = {
+//     badges: badgesArray,
+//   };
+//   for (let prop in params) if (!params[prop]) delete params[prop];
+//   const mentor = await Mentor.findByIdAndUpdate(req.params.id, params, {
+//     new: true,
+//   });
+//   if (!mentor) return res.send("the badges cannot be updated!");
+//   res.send(mentor);
+// });
 
 //answer
 router.post("/answers/:id", async (req, res) => {
@@ -295,6 +309,65 @@ router.post("/answers/:id", async (req, res) => {
 
     res.send(answer);
   }
+});
+
+router.post("/badges/:id", async (req, res) => {
+  const mentorid = mongoose.Types.ObjectId(req.params.id);
+  const mentorobj = await Mentor.findById(mentorid);
+  const coins = mentorobj.totalCoins;
+  if (coins.current - req.body.value > 0) {
+    coins.current = coins.current - req.body.value;
+    console.log(coins);
+    let params = {
+      totalCoins: coins,
+    };
+    for (let prop in params) if (!params[prop]) delete params[prop];
+    const mentor = await Mentor.findByIdAndUpdate(req.params.id, params, {
+      new: true,
+    });
+    const today = Date.now();
+    let badge = new Badge({
+      name: req.body.question,
+      description: req.body.description,
+      value: req.body.value,
+      mentor: req.body.params,
+      date: today,
+    });
+    badge = await badge.save();
+    if (!badge) return res.send("the answer cannot be created!");
+    res.send(badge);
+  } else res.send("Not enough coins");
+});
+
+router.put("/badges/:id", async (req, res) => {
+  const badgeid = mongoose.Types.ObjectId(req.body.badge);
+  const badgeobj = await Badge.findById(badgeid);
+  const value = badgeobj.value;
+  const menteeid = mongoose.Types.ObjectId(req.body.mentee);
+  const menteeobj = await Mentee.findById(menteeid);
+
+  const coins = menteeobj.totalCoins;
+
+  coins.current = coins.current + value;
+  coins.total = coins.total + value;
+  let params = {
+    totalCoins: coins,
+  };
+  for (let prop in params) if (!params[prop]) delete params[prop];
+  const mentee = await Mentee.findByIdAndUpdate(menteeid, params, {
+    new: true,
+  });
+
+  params = {
+    mentee: menteeid,
+  };
+  for (let prop in params) if (!params[prop]) delete params[prop];
+  const badge = await Badge.findByIdAndUpdate(badgeid, params, {
+    new: true,
+  });
+
+  if (!badge) return res.send("the answer cannot be created!");
+  res.send(mentee);
 });
 
 router.post("/question/:id", async (req, res) => {
